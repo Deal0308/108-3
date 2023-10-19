@@ -1,0 +1,15 @@
+
+#.gitignore files specifies files and folders that should be ignore
+
+#create a repo
+git init
+#check the status
+git status
+
+#check the log
+git log
+#use q to close the log
+
+#to create snapshots
+git add -A 
+git commit -m "any message"
