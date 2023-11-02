@@ -1,6 +1,6 @@
-from flask import Flask, request
+from flask import Flask, request, abort
 from config import me
-from mock_data import catalog
+from mock_data import catalog, coupon_codes
 import json
 
 
@@ -84,5 +84,55 @@ def product_search(term):
         if term.lower() in prod["title"].lower():
             results.append(prod)
     return json.dumps(results)
+
+@app.get("/api/products/lower/<price>")
+def get_lower(price):
+    results = []
+    for prod in catalog:
+        if prod["price"] <= float(price):
+            results.append(prod)
+    return json.dumps(results)
+
+
+######################################################################   COUPON   ######################################################################
+
+@app.get("/api/coupon_codes")
+def get_coupon_codes():
+    return json.dumps(coupon_codes)
+
+# post /api/coupon_codes
+
+
+# save a coupon
+@app.post("/api/coupon_codes")
+def save_coupon():
+    coupon = request.get_json()
+    coupon["_id"] = len(coupon_codes)
+
+    coupon_codes.append(coupon)
+    return json.dumps(coupon)
+
+# get /api/coupons/apply/<code>
+# search for the coupon with the code
+# return the obj/dict if exist
+
+@app.get("/api/coupons/<code>")
+def search_coupon(code):
+    for coupon in coupon_codes:
+        if coupon["code"].lower() == code.lower():
+            return json.dumps(coupon)
+    return abort(404, "Invalid code")
+# get /api/coupons/apply/<code>/<price>
+# search for the coupon with the code
+# if exist, calculate the discount
+# return the obj/dict if exist
+
+@app.get("/api/coupons/apply/<code>/<price>")
+def apply_coupon(code, price):
+    for coupon in coupon_codes:
+        if coupon["code"] == code:
+            discount = float(price) * coupon["discount"]
+            return json.dumps({"discount": discount})
+    return json.dumps({"error": True, "message": "Invalid code"})
 
 

@@ -100,3 +100,28 @@ catalog =[
         "_id": "14" #don't repeat this
     }
 ]
+
+
+coupon_codes = [
+    {
+        "code": "10OFF",
+        "discount": 0.1
+    },
+    {
+        "code": "20OFF",
+        "discount": 0.2
+    },
+    {
+        "code": "30OFF",
+        "discount": 0.3
+    },
+    {
+        "code": "40OFF",
+        "discount": 0.4
+    },
+    {
+        "code": "50OFF",
+        "discount": 0.5
+    },
+   
+]
