@@ -75,3 +75,14 @@ def get_by_category(cat):
 
 app.run(debug=True)
 
+# get search <term>
+
+@app.get("/api/products/search/<term>")
+def product_search(term):
+    results = []
+    for prod in catalog:
+        if term.lower() in prod["title"].lower():
+            results.append(prod)
+    return json.dumps(results)
+
+
