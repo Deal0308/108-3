@@ -90,24 +90,31 @@ def get_by_cursor(cat):
     return json.dumps(results)
 
 
-app.run(debug=True)
-
-# get search <term>
-
-@app.get("/api/products/search/<term>")
-def product_search(term):
-    results = []
-    for prod in catalog:
-        if term.lower() in prod["title"].lower():
-            results.append(prod)
-    return json.dumps(results)
 
 @app.get("/api/products/lower/<price>")
-def get_lower(price):
+def products_lower(price):
     results = []
-    for prod in catalog:
-        if prod["price"] <= float(price):
-            results.append(prod)
+    real_price = float(price)
+    cursor = db.products.find({"price": {"$lt": real_price}})
+    
+    for prod in cursor:
+        fix_id(prod)
+        results.append(prod)
+
+    return json.dumps(results)
+
+
+# get price greater or equal than <price>
+@app.get("/api/products/greater/<price>")
+def products_greater(price):
+    results = []
+    real_price = float(price)
+    cursor = db.products.find({"price": {"$gte": real_price}})
+    
+    for prod in cursor:
+        fix_id(prod)
+        results.append(prod)
+
     return json.dumps(results)
 
 
@@ -115,6 +122,11 @@ def get_lower(price):
 
 @app.get("/api/coupon_codes")
 def get_coupon_codes():
+    cursor = db.coupon_codes.find({})
+    results = []
+    for coupon in cursor:
+        fix_id(coupon)
+        results.append(coupon)
     return json.dumps(coupon_codes)
 
 # post /api/coupon_codes
@@ -124,9 +136,11 @@ def get_coupon_codes():
 @app.post("/api/coupon_codes")
 def save_coupon():
     coupon = request.get_json()
-    coupon["_id"] = len(coupon_codes)
+    
 
     coupon_codes.append(coupon)
+    # save coupon to the database
+    db.coupon_codes.insert_one(coupon)
     return json.dumps(coupon)
 
 # get /api/coupons/apply/<code>
@@ -135,10 +149,14 @@ def save_coupon():
 
 @app.get("/api/coupons/<code>")
 def search_coupon(code):
-    for coupon in coupon_codes:
-        if coupon["code"].lower() == code.lower():
-            return json.dumps(coupon)
-    return abort(404, "Invalid code")
+    coupon = db.coupons.find_one({"code": {'$regex': f"^{code}$", '$options': "i"}})
+    
+
+    if not coupon:
+        return abort(404, "Invalid code")
+    fix_id(coupon)
+    return json.dumps(coupon)
+        
 # get /api/coupons/apply/<code>/<price>
 # search for the coupon with the code
 # if exist, calculate the discount
@@ -146,9 +164,12 @@ def search_coupon(code):
 
 @app.get("/api/coupons/apply/<code>/<price>")
 def apply_coupon(code, price):
+
     for coupon in coupon_codes:
+
         if coupon["code"] == code:
             discount = float(price) * coupon["discount"]
+
             return json.dumps({"discount": discount})
     return json.dumps({"error": True, "message": "Invalid code"})
 
