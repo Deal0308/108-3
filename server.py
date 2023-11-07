@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from config import me
+from config import me, db
 from mock_data import catalog, coupon_codes
 import json
 
@@ -18,6 +18,11 @@ def test():
 
 
 # ######################################################################   API   ######################################################################
+
+def fix_id(record):
+    record["_id"] = str(record["_id"])
+    return record
+
 
 
 
@@ -39,15 +44,20 @@ def about():
 
 @app.get("/api/catalog")
 def get_catalog():
-    return json.dumps(catalog)
+    cursor = db.products.find({})
+    results = []
+    for prod in cursor:
+        fix_id(prod)
+        results.append(prod)
+    return json.dumps(results)
 
 
 @app.post('/api/catalog')
 def save_product():
     product = request.get_json()
 
-    product['_id'] = len(catalog)
-    catalog.append(product)
+# save product to the database
+    db.products.insert_one(product)
 
     return json.dumps(product)
 
@@ -56,20 +66,27 @@ def save_product():
 # that send the total value of your catalog (sum of all prices)
 @app.get("/api/report/total")
 def get_report_total():
+    cursor = db.products.find({})
     total = 0
-    for prod in catalog:
+    for prod in cursor:
         total += prod['price']
+    
+    results = {
+        "report": "total",
+        "value": total
+    }
     return json.dumps({"total": total})   
 
 # get all products for a given category
 # get /api/catalog/cat/<category>
 # get /api/catalog/cat/Fruit
 @app.get("/api/products/<cat>")
-def get_by_category(cat):
+def get_by_cursor(cat):
+    cursor = db.products.find({"category": cat})
     results = []
-    for prod in catalog:
-        if prod["category"] == cat:
-            results.append(prod)
+    for prod in cursor:
+        fix_id(prod)
+        results.append(prod)
     return json.dumps(results)
 
 
