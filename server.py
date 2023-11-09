@@ -2,9 +2,10 @@ from flask import Flask, request, abort
 from config import me, db
 from mock_data import catalog, coupon_codes
 import json
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app) # this will allow CORS for all routes, meaning that any frontend can make requests to this API
 
 @app.get("/")
 def index():
